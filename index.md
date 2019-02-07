@@ -3,6 +3,8 @@
 
 ## The Progress Journal of LEYLA YİĞİT
 
+![Screenshot] ()
+
 ***
 ***
 

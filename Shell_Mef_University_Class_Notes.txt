@@ -1,0 +1,163 @@
+1: Now try yourself: List all the contents of the "usr" directory right under root, including hidden files, and reverse size sorted, one file per line and without details:
+ls -1arS /usr
+
+
+2: View the contents of the helloworld file at the home directory created recently
+
+cat ~/helloworld
+
+
+3: Define the "imdbtsv" variable for the path to the tsv directory under imdbdir,byusingimdbdir,byusingimdbdir, check the value and contents
+
+imdbtsv=$imdbdir/tsv;
+echo $imdbtsv;
+ls $imdbtsv;
+
+
+4: 
+• Write a function exists2 that echoes "exists" or "notexists" based on the exists condition
+• Create a directory tsv3, but it should not complain if run twice. If executed it should return a message that it did so (even if it does not redo)
+• Check whether tsv3 exists
+• Copy the tsv files under tsv directory here, but it should not overwrite the files
+• List the contents of tsv3 directory
+• Remove the tsv3 directory and return a message that it did so
+• and check whether tsv3 exists anymore using the above function
+
+exists2()  if [ -e $1 ]; then echo exists; else echo notexists; fi;
+mkdir -p $imdbdir/tsv3 && echo $imdbdir/tsv3 created;
+exists2 $imdbdir/tsv3;
+cp -n $imdbdir/tsv/*.tsv $imdbdir/tsv3/;
+ls $imdbdir/tsv3;
+rm -r $imdbdir/tsv3 && echo $imdbdir/tsv3 deleted;
+exists2 $imdbdir/tsv3;
+
+
+5: Find the WORD counts (not line) of all gzipped files under tsv directory, using any of the methods you like above. Check the "name" argument to file, the glob for the files is "*.gz"
+IMHO, this is a "big data management" course, and in order to process larger datasets easily utilizing the max power of your processor with full throttle, "parallel" should be your way!
+Note that in order to use text processing commands (cat, less etc.) on zipped files, we add the prefix "z" to those commands
+
+
+find $imdbdir/tsv -mindepth 1 -name "*.gz" | \
+    parallel -k -j0 'printf "%s\t" {}; zcat {} | wc -w | numfmt --to=si' | \
+    column -t
+    
+find $imdbdir/tsv -mindepth 1 -name "*.gz" | \
+    parallel -k -j0 "printf \"%s\t\" {}; zcat {} | wc -w | numfmt --to=si" | \
+    column -t
+
+
+    
+6: gzip algorithm can implement compressions up to two orders of magnitude.
+In some cases it is not convenient to gunzip the files since they may fill up the drive.
+So we may have to do the same thing on the gzipped files, off you go!
+Note: There is no "z" version for head, but "head" can work on stdin
+
+find $imdbdir/tsv -mindepth 1 -name "*.gz" | \
+    parallel -k -j0 'printf "%s\t" {}; zcat {} | head -1 | wc -w' | \
+    column -t
+
+7: Did you realize that sth was different here as compared to previous ones? What is that?
+
+
+Since the alignment for each file is different, "column" command is inside the parallel command, not outside
+
+
+8: We want to print the first and last lines of each file.
+Note that, in order the align both lines, they must be fed into the pipe before "column" command together. Can you figure out a way for this?
+
+
+find $imdbdir/tsv2 -mindepth 1 | \
+    parallel -k -j0 'printf "%s\n" {}; { head -1 {}; tail -1 {}; } | column -t; echo'
+
+9: Write a function named linepattern that takes a file, a column pattern, a row pattern and returns the line number of match and the whole line
+Note that you can pass multiple variables to awk by invking "-v" multiple times for each variable
+And string variables with whitespaces must be wrapped inside quotes
+
+linepattern()
+{
+    filename=$1
+    colpat=$2
+    rowpat="$3"
+    CN=$(head -1 $filename | tr "\t" "\n" | sed -n "/$colpat/=")
+    awk -v CN=$CN -v rowpat="$rowpat" -F "\t" '$CN == rowpat { print NR": "$0 }' $filename
+}
+
+
+10: Get the unique values of startYear column of title.basics.tsv but report only year values (just numbers)
+You can reuse components from previous grep commands for regex
+
+filename=$imdbdir/tsv2/title.basics.tsv
+pattern=startYear
+CN=$(head -1 $filename | tr "\t" "\n" | sed -n "/$pattern/=")
+awk -v CN=$CN -F "\t" '{ print $CN }' $filename | \
+sort -u | grep -Po "\d+" | pr -8 -t
+
+
+
+
+11:Delete first 2 and isAdult columns, keep the header Filter for movies that have a runtime less than 10 minutes and not \N, genres include thriller and start year is after 1990 and not \N Note that you have to escape the escape character in "\N" as such: "\N"
+Run head -1 for once and save in a variable
+
+
+header=$(head -1 $filename);
+CN1=$(echo "$header" | tr "\t" "\n" | sed -n "/runtimeMinutes/=");
+CN2=$(echo "$header" | tr "\t" "\n" | sed -n "/genres/=");
+CN3=$(echo "$header" | tr "\t" "\n" | sed -n "/startYear/=");
+
+{ echo "$header" | awk -F "\t" 'BEGIN {OFS = "\t"} { $1=$2=$5="";print $0 }'; \
+    awk -v CN1=$CN1 -v CN2=$CN2 -v CN3=$CN3 -F "\t" \
+        'BEGIN {OFS = "\t"} \
+        $CN1 < 2 && \
+        $CN1 != "\\N" && \
+        $CN2 ~ /Thriller/ && \
+        $CN3 > 2016 && \
+        $CN3 != "\\N" \
+        { $1=$2=$5="";print $0 }' $filename;
+} | column -t -s $'\t'
+
+
+
+12: In R, create a file title.genres_short.tsv under tsv2 in which there are two columns from title.basics.tsv, tconst and genres: genres split from commas and tconst replicated accordingly. Take only the first 1e5 (100k) lines. Compare the dimension of input and output objects/files
+
+library(data.table)
+prefix <- "~/data/imdb"
+in_path <- sprintf("%s/tsv2/title.basics.tsv", prefix); in_path
+
+title.basics <- data.table::fread(in_path)
+title.basics[,names(.SD)]
+ genres_molten <- title.basics[1:1e5, {
+    genres_list = strsplit(genres, ",");
+    .(
+        tconst = rep(tconst, sapply(genres_list, length)),
+        genres = unlist(genres_list)
+    )
+ }
+]
+
+print(lapply(list(title.basics[1:1e5], genres_molten), dim))
+
+out_path <- sprintf("%s/tsv2/title.genres_short.tsv", prefix); out_path
+fwrite(genres_molten, file = out_path, sep = "\t") # fast write new DT as tsv
+
+
+
+QUESTION
+Your task is to write a wrapper function called windowsearch take takes four parameters:
+	• First parameter is the starting line number for the window
+	• Second parameter is the ending line number for the window
+	• Third parameter is the position of sort field
+	• Fourth parameter is the filename
+	• The function takes the three parameters and using sed, returns those lines in between the two line numbers from the file by sorting according to the nth field as specified by the third parameter
+	• So sed output should pipe into sort
+	• Note that positional parameters are referred to by their position as $1, \$2
+	• You may or may not assign those positional parameters into named variables inside the function. In a simple context it is not too important. In more complex scripts, we may lose the track of what $1, \$2 and so on stands for
+
+windowsearch()
+{
+    startline=$1
+    endline=$2
+    sortfield=$3
+    filename=$4
+    sed -n "${startline},${endline}p" $filename | sort -k $sortfield
+
+}

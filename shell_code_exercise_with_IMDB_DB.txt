@@ -1,0 +1,55 @@
+﻿#istenilen çıktıyı verdi
+##Big Data Management Homework1
+datadir=~/data ##datadir variable data dosyasına atandı.
+echo $datadir
+ls $datadir
+imdbdir=$datadir/imdb ##data altına imdb atıldı
+echo $imdbdir
+ls $imdbdir
+mkdir -p $imdbdir/tsv2 && echo "$imdbdir/tsv2 created" ## second command executed only if first one is successful ##tsv2 dosyası altında yer alacak gunzipleri yapmak için önce dosya oluşturuldu.
+ls $imdbdir
+yes n | gunzip -k $imdbdir/tsv/*.gz
+cp -n $imdbdir/tsv/*.tsv $imdbdir/tsv2/ ##tsv2'ye dosyaları aldık.
+ls $imdbdir/tsv2/
+windowsearch()
+{   pattern=$1 #First parameter is the starting line number for the window
+    pattern=$2 #Second parameter is the ending line number for the window
+    pattern=$3 #Third parameter is the position of sort field
+    filename=$4 #Fourth parameter is the filename
+    CN=$(head -1 $4 | tr "\t" "\n" | sed -n "/$1,$2p/" $4 |sort -z | tr '\0' '\n' -k$3)
+    awk -v s="$1" -v e="$2" 'NR>=1*s&&NR<=1*e' /$4 | sort -k$3 
+    #awk -v CN=$CN -F "\t" '{ print $CN }' 
+}
+
+*****DOGRU CEVAP
+windowsearch()
+{
+    startline=$1
+    endline=$2
+    sortfield=$3
+    filename=$4
+    sed -n "${startline},${endline}p" $filename | sort -k $sortfield
+
+}
+
+
+find $imdbdir/tsv2 -mindepth 1 | \
+        " | column -t
+    parallel -k -j0 "basenm=\$(basename {});
+        {
+            printf '%s\t' \$basenm;
+            cat $imdbdir/tsv2/\$basenm | wc -l;
+            cat $imdbdir/tsv3/\${basenm/.tsv/2.tsv} | wc -l; --
+        } | tr '\n' '\t' | xargs echo -e
+		
+--Tabla'ları , yapar. TSV formatını csv yapar.		-j0 mumkun olan en yuksek paralel process'de çalıştır demek. Tab'lar , ile raplace edilir.
+		find $imdbdir/tsv2 -mindepth 1 | \
+    parallel -k -j0 "basenm=\$(basename {});
+        if [ ! -e ${imdbdir}/csv/\${basenm/.tsv/.csv} ];
+        then
+            cat {} | tr '\t' ',' > \
+            ${imdbdir}/csv/\${basenm/.tsv/.csv};
+        fi
+        "
+---Yeni session yaratır.screen -S 1 1 yeni sessiona rastgele verilmiş bir isimdir.		
+		

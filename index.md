@@ -5,7 +5,7 @@
 
 
 
-![Screenshot](aloomaliveimage2.jpg)
+![Screenshot](images.jpg)
 
 
 

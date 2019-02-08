@@ -3,7 +3,7 @@
 
 ## The Progress Journal of LEYLA YİĞİT
 
-![Screenshot] ()
+![Screenshot](aloomaliveimage2.jpg)
 
 ***
 ***

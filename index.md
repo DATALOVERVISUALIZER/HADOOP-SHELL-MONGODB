@@ -7,8 +7,7 @@
 
 ![Screenshot](aloomaliveimage2.jpg)
 
-***
-***
+
 
 **Below Codes are developed by using Jupiter Notebook**
 

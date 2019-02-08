@@ -1,7 +1,9 @@
 
-# MONGODB, JSON, HADOOP, SHELL, XML DEVELOPMENTS
 
 ## The Progress Journal of LEYLA YİĞİT
+**MongoDB, JSON, Hadoop Ecosystem, Shell, XML Developments**
+
+
 
 ![Screenshot](aloomaliveimage2.jpg)
 
